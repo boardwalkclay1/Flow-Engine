@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Engine Test Panel</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: monospace;
+      padding: 20px;
+    }
+    h1 { margin-bottom: 10px; }
+    button {
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 8px 14px;
+      margin: 6px 0;
+      cursor: pointer;
+      font-family: monospace;
+    }
+    pre {
+      background: #111;
+      padding: 12px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>ENGINE TEST PANEL</h1>
+<p>Use these buttons to test engine functions live.</p>
+
+<button onclick="runConfig()">Configure Client</button>
+<button onclick="seedProducts()">Seed Products</button>
+<button onclick="testOrder()">Create Test Order</button>
+<button onclick="testCoupon()">Create + Apply Coupon</button>
+<button onclick="testMessaging()">Post Message</button>
+<button onclick="testVerify()">Verify Last Order</button>
+<button onclick="clearAll()">Clear Storage</button>
+
+<pre id="output">Output will appear here...</pre>
+
+<script src="engine.js"></script>
+<script>
+
+function log(data) {
+  document.getElementById("output").textContent =
+    typeof data === "string" ? data : JSON.stringify(data, null, 2);
+}
+
+function runConfig() {
+  const cfg = Engine.configureClient({
+    id: "test-client",
+    name: "Test Business",
+    features: {
+      rentals: true,
+      tickets: true,
+      products: true,
+      coupons: true,
+      staff_messaging: true
+    }
+  });
+  log(cfg);
+}
+
+function seedProducts() {
+  const p1 = Engine.products.create({
+    name: "General Admission",
+    type: "ticket",
+    price: 20,
+    currency: "USD"
+  });
+
+  const p2 = Engine.products.create({
+    name: "Bike Rental (2h)",
+    type: "rental",
+    price: 35,
+    currency: "USD"
+  });
+
+  log({ p1, p2 });
+}
+
+function testOrder() {
+  const products = Engine.products.list();
+  if (!products.length) return log("No products exist. Seed first.");
+
+  const order = Engine.orders.create({
+    customerName: "Jordan Lane",
+    customerEmail: "jordan@example.com",
+    customerPhone: "",
+    productId: products[0].id,
+    quantity: 2,
+    totalAmount: products[0].price * 2
+  });
+
+  log(order);
+}
+
+function testCoupon() {
+  const coupon = Engine.coupons.create({
+    code: "TEST10",
+    type: "percent",
+    value: 10,
+    usageLimit: 5
+  });
+
+  const result = Engine.coupons.applyToTotal(100, "TEST10");
+
+  log({ coupon, result });
+}
+
+function testMessaging() {
+  const msg = Engine.messaging.post({
+    senderId: "dev",
+    senderName: "Developer",
+    body: "This is a test message."
+  });
+
+  log(msg);
+}
+
+function testVerify() {
+  const orders = Engine.orders.list();
+  if (!orders.length) return log("No orders exist.");
+
+  const last = orders[orders.length - 1];
+  const verified = Engine.verify.qrToken(last.qrToken);
+
+  log(verified);
+}
+
+function clearAll() {
+  localStorage.clear();
+  log("Storage cleared.");
+}
+
+</script>
+</body>
+</html>
